@@ -121,14 +121,20 @@ getAddrInfo (Just hints) (Just hostname) msn =
   do addr  <- case reads hostname of
                 [(addr, "")] -> return (convertToWord32 addr)
                 _            -> hostAddress `fmap` (getHostByName hostname)
-     (port, proto) <- case msn of
-                        Nothing -> return (0, defaultProtocol)
-                        Just sn ->
-                          do pent <- getProtocolByNumber (addrProtocol hints)
-                             entry <- getServiceByName "sn" (protoName pent)
-                             let port = servicePort entry
-                             prot <- getProtocolByName (serviceProtocol entry)
-                             return (port, protoNumber prot)
+     (port, proto) <-
+       case msn of
+         Nothing -> return (0, defaultProtocol)
+         Just sn ->
+           do pent <- getProtocolByNumber (addrProtocol hints)
+              -- entry <- getServiceByName "sn" (protoName pent)
+              case reads sn of
+                [(w16, _)] -> return (PortNum w16, addrProtocol hints)
+                [] -> case reads sn of
+                        [(pn, _)] -> return (pn, addrProtocol hints)
+                        [] -> do entry <- getServiceByName sn (protoName pent)
+                                 let port = servicePort entry
+                                 prot <- getProtocolByName (serviceProtocol entry)
+                                 return (port, protoNumber prot)
      let stype = if proto == 6 then Stream else Datagram
      -- Now figure out the socket type
      let sockaddr = SockAddrInet port addr
@@ -151,14 +157,14 @@ socketPair _ _ _  =
 
 getPeerName :: Socket -> IO SockAddr
 getPeerName s =
-  do nsock <- getConnectedHansSocket s ForNeither
+  do nsock <- getHansSocket s ForNeither
      let oaddr = convertToWord32 (NS.sockRemoteHost nsock)
          oport = fromIntegral (getPort (NS.sockRemotePort nsock))
      return (SockAddrInet oport oaddr)
 
 getSocketName :: Socket -> IO SockAddr
-getSocketName s = 
-  do nsock <- getConnectedHansSocket s ForNeither
+getSocketName s =
+  do nsock <- getHansSocket s ForNeither
      let lport = fromIntegral (getPort (NS.sockLocalPort nsock))
          laddr = convertToWord32 (IP4 127 0 0 1)
      return (SockAddrInet lport laddr)

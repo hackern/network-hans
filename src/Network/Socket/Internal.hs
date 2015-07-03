@@ -19,6 +19,7 @@ module Network.Socket.Internal(
        , ProtocolNumber
        , defaultProtocol
        , ForAction(..)
+       , getHansSocket
        , getConnectedHansSocket
        , getBoundUdpPort
        , getNextUdpPacket
@@ -63,6 +64,14 @@ data Socket = Socket {
 
 data ForAction = ForNeither | ForRead | ForWrite | ForBoth
   deriving (Eq)
+
+getHansSocket :: Socket -> ForAction -> IO NS.Socket
+getHansSocket sock forWrite =
+  do state <- readMVar (sockState sock)
+     case state of
+       SockConnected _ _ -> getConnectedHansSocket sock forWrite
+       SockListening s   -> return s
+       _  -> throwIO (userError "Socket not in connected or listening state")
 
 getConnectedHansSocket :: Socket -> ForAction -> IO NS.Socket
 getConnectedHansSocket sock forWrite =
@@ -298,7 +307,7 @@ hansTcpSockAddr (SockAddrInet (PortNum pn) addr) =
   (convertFromWord32 addr, fromIntegral pn)
 
 newtype PortNumber = PortNum Word16
-  deriving (Enum, Eq, Integral, Num, Ord, Real, Show, Typeable, Storable)
+  deriving (Enum, Eq, Integral, Num, Ord, Real, Show, Typeable, Storable, Read)
 
 data Family
     = AF_UNSPEC           -- ^unspecified
