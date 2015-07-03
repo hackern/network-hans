@@ -240,7 +240,7 @@ data SocketOption = Debug | ReuseAddr | Type | SoError | DontRoute | Broadcast
                   | SendBuffer | RecvBuffer | KeepAlive | OOBInline | TimeToLive
                   | MaxSegment | NoDelay | Cork | Linger | ReusePort
                   | RecvLowWater | SendLowWater | RecvTimeOut | SendTimeOut
-                  | UseLoopBack | IPv6Only | CustomSockOpt (CInt, CInt)
+                  | UseLoopBack | IPv6Only | CustomSockOpt (CInt, CInt) | UserTimeout
 
   deriving (Show, Typeable)
 
